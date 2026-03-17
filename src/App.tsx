@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // ONLY THIS LINE CHANGES: Swap BrowserRouter for HashRouter
 import { HashRouter, Routes, Route } from "react-router-dom"; 
 import Index from "./pages/Index";
+import Analyzer from "./pages/Analyzer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ const App = () => (
       <HashRouter> 
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/analyzer" element={<Analyzer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </HashRouter>

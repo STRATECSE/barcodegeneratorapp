@@ -1,9 +1,12 @@
-import { ScanBarcode, Moon, Sun } from 'lucide-react';
+import { ScanBarcode, Moon, Sun, ScanLine } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 export function Header() {
   const [isDark, setIsDark] = useState(true);
+  const location = useLocation();
+  const isAnalyzer = location.pathname === '/analyzer';
 
   useEffect(() => {
     // Check initial theme
@@ -45,6 +48,16 @@ export function Header() {
               <span className="neon-text font-semibold">20+</span>
               <span>formats supported</span>
             </div>
+            <Link to={isAnalyzer ? '/' : '/analyzer'}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 rounded-xl border-border/50 bg-secondary/50 hover:bg-secondary/80 font-medium"
+              >
+                <ScanLine className="h-4 w-4 text-primary" />
+                <span className="hidden sm:inline">{isAnalyzer ? 'Generator' : 'Analyzer'}</span>
+              </Button>
+            </Link>
             <Button
               variant="outline"
               size="icon"

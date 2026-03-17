@@ -3,7 +3,14 @@
     "allow": [
       "Bash(cd D:/projects/barcodegeneratorapp && npm install 2>&1)",
       "Bash(cd D:/projects/barcodegeneratorapp && npm run electron:build 2>&1)",
-      "Bash(cd D:/projects/barcodegeneratorapp && npm run build 2>&1)"
+      "Bash(cd D:/projects/barcodegeneratorapp && npm run build 2>&1)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc.cmd --noEmit)",
+      "Bash(node_modules/.bin/vite build:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const p = require\\(''@zxing/browser/package.json''\\); console.log\\(''version:'', p.version\\); const l = require\\(''@zxing/library/package.json''\\); console.log\\(''library version:'', l.version\\);\")",
+      "Bash(node:*)"
     ]
   }
 }
