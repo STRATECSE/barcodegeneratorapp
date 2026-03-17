@@ -11,7 +11,8 @@ export interface BarcodeImageResult {
 export async function generateBarcodeImage(
   value: string,
   format: BarcodeFormat,
-  scale: number
+  scale: number,
+  margin = 10
 ): Promise<BarcodeImageResult | null> {
   const validation = validateInput(value, format);
   if (!validation.valid) return null;
@@ -27,7 +28,7 @@ export async function generateBarcodeImage(
       displayValue: false,
       lineColor: '#000000',
       background: '#FFFFFF',
-      margin: 10 * scale,
+      margin: margin * scale,
       font: 'monospace',
     });
 
@@ -63,7 +64,8 @@ export async function generateBarcodeImage(
 export async function generateBarcodeBlob(
   value: string,
   format: BarcodeFormat,
-  scale: number
+  scale: number,
+  margin = 10
 ): Promise<Blob | null> {
   const validation = validateInput(value, format);
   if (!validation.valid) return null;
@@ -79,7 +81,7 @@ export async function generateBarcodeBlob(
       displayValue: false,
       lineColor: '#000000',
       background: '#FFFFFF',
-      margin: 10 * scale,
+      margin: margin * scale,
       font: 'monospace',
     });
 

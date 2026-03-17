@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd D:/projects/barcodegeneratorapp && npm install 2>&1)",
+      "Bash(cd D:/projects/barcodegeneratorapp && npm run electron:build 2>&1)",
+      "Bash(cd D:/projects/barcodegeneratorapp && npm run build 2>&1)"
+    ]
+  }
+}

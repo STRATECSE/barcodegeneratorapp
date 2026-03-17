@@ -109,7 +109,7 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
       const folder = zip.folder('barcodes');
 
       for (let i = 0; i < valueList.length; i++) {
-        const blob = await generateBarcodeBlob(valueList[i], format, scale);
+        const blob = await generateBarcodeBlob(valueList[i], format, scale, 0);
         if (blob && folder) {
           folder.file(`${valueList[i]}.png`, blob);
         }
@@ -143,7 +143,7 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
       const images: { dataUrl: string; width: number; height: number; value: string }[] = [];
 
       for (let i = 0; i < valueList.length; i++) {
-        const result = await generateBarcodeImage(valueList[i], format, scale);
+        const result = await generateBarcodeImage(valueList[i], format, scale, 0);
         if (result) images.push(result);
         setProgress(((i + 1) / valueList.length) * 100);
       }

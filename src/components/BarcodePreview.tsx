@@ -48,13 +48,14 @@ export function BarcodePreview({ config, effects = defaultEffects, isValid, erro
     return QUALITY_LEVELS.find(q => q.value === config.quality)?.blur || 0;
   }, [config.quality]);
 
-  // Compute effective bar width based on line thickness and spacing
+  // Compute effective bar width: convert mils → pixels using DPI, then apply line thickness
   const effectiveWidth = useMemo(() => {
+    const pixelWidth = config.widthMils * config.dpi / 1000;
     if (effects.enableEffects) {
-      return config.width * effects.lineThickness;
+      return pixelWidth * effects.lineThickness;
     }
-    return config.width;
-  }, [config.width, effects.enableEffects, effects.lineThickness]);
+    return pixelWidth;
+  }, [config.widthMils, config.dpi, effects.enableEffects, effects.lineThickness]);
 
   // Render 1D barcodes with JsBarcode
   useEffect(() => {
@@ -311,65 +312,14 @@ export function BarcodePreview({ config, effects = defaultEffects, isValid, erro
     }
   };
 
-  // FIXED: Electron-compatible print function
+  // Print barcode — always renders clean (no effects, no quiet zone/margin)
   const printBarcode = () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const generatePrintableImage = (img: HTMLImageElement, cleanup?: () => void): string => {
-      if (effects.enableEffects) {
-        applyEffects(ctx, canvas, img);
-      } else {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-      }
-      
-      if (cleanup) cleanup();
-      return canvas.toDataURL('image/png');
-    };
+    const pixelWidth = config.widthMils * config.dpi / 1000;
 
-    // Check if running in Electron
-    if (typeof window !== 'undefined' && window.require) {
-      try {
-        const { ipcRenderer } = window.require('electron');
-        
-        // Generate the image data URL
-        if (is2D) {
-          if (!barcodeCanvasRef.current) return;
-          
-          const img = new Image();
-          img.onload = () => {
-            const dataUrl = generatePrintableImage(img);
-            // Send to Electron for printing
-            ipcRenderer.send('print-barcode', dataUrl);
-          };
-          img.src = barcodeCanvasRef.current.toDataURL('image/png');
-        } else {
-          if (!svgRef.current) return;
-          
-          const svg = svgRef.current;
-          const svgData = new XMLSerializer().serializeToString(svg);
-          const img = new Image();
-          const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-          const url = URL.createObjectURL(svgBlob);
-
-          img.onload = () => {
-            const dataUrl = generatePrintableImage(img, () => URL.revokeObjectURL(url));
-            // Send to Electron for printing
-            ipcRenderer.send('print-barcode', dataUrl);
-          };
-          img.src = url;
-        }
-        
-        return; // Exit after sending to Electron
-      } catch (error) {
-        console.error('Electron print failed, falling back to browser print:', error);
-      }
-    }
-
-    // Fallback: Browser print (original method for web version)
     const openPrintWindow = (imageDataUrl: string) => {
       const printWindow = window.open('', '', 'width=800,height=600');
       if (!printWindow) {
@@ -438,29 +388,74 @@ export function BarcodePreview({ config, effects = defaultEffects, isValid, erro
       };
     };
 
-    if (is2D) {
-      if (!barcodeCanvasRef.current) return;
-      
-      const img = new Image();
-      img.onload = () => {
-        const dataUrl = generatePrintableImage(img);
-        openPrintWindow(dataUrl);
-      };
-      img.src = barcodeCanvasRef.current.toDataURL('image/png');
-    } else {
-      if (!svgRef.current) return;
-      
-      const svg = svgRef.current;
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const img = new Image();
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
+    const dispatchPrint = (dataUrl: string) => {
+      if (typeof window !== 'undefined' && window.require) {
+        try {
+          const { ipcRenderer } = window.require('electron');
+          ipcRenderer.send('print-barcode', dataUrl);
+          return;
+        } catch (error) {
+          console.error('Electron print failed, falling back to browser print:', error);
+        }
+      }
+      openPrintWindow(dataUrl);
+    };
 
-      img.onload = () => {
-        const dataUrl = generatePrintableImage(img, () => URL.revokeObjectURL(url));
-        openPrintWindow(dataUrl);
-      };
-      img.src = url;
+    if (is2D) {
+      // Re-render 2D barcode with padding:0 — no quiet zone, no effects
+      const tempCanvas = document.createElement('canvas');
+      try {
+        const bwipOptions: Record<string, unknown> = {
+          bcid: getBwipFormat(config.format),
+          text: barcodeText,
+          scale: Math.max(1, Math.round(pixelWidth * config.scale)),
+          includetext: config.displayValue,
+          textsize: Math.round(config.fontSize * config.scale),
+          textxalign: 'center',
+          backgroundcolor: config.background.replace('#', ''),
+          barcolor: config.lineColor.replace('#', ''),
+          padding: 0,
+        };
+        if (config.format === 'pdf417') {
+          bwipOptions.height = Math.floor((config.height * config.scale) / 10);
+          bwipOptions.width = Math.floor((config.height * config.scale) / 3);
+        }
+        bwipjs.toCanvas(tempCanvas, bwipOptions as unknown as Parameters<typeof bwipjs.toCanvas>[1]);
+        dispatchPrint(tempCanvas.toDataURL('image/png'));
+      } catch (error) {
+        console.error('Print 2D barcode error:', error);
+      }
+    } else {
+      // Re-render 1D barcode with margin:0 — no quiet zone, no effects
+      const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const renderText = normalizeForRendering(barcodeText, config.format);
+      try {
+        JsBarcode(tempSvg, renderText, {
+          format: config.format,
+          width: pixelWidth * config.scale,
+          height: config.height * config.scale,
+          displayValue: config.displayValue,
+          fontSize: config.fontSize * config.scale,
+          lineColor: config.lineColor,
+          background: config.background,
+          margin: 0,
+          font: 'JetBrains Mono',
+        });
+        const svgData = new XMLSerializer().serializeToString(tempSvg);
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          dispatchPrint(canvas.toDataURL('image/png'));
+        };
+        img.src = url;
+      } catch (error) {
+        console.error('Print 1D barcode error:', error);
+      }
     }
   };
 

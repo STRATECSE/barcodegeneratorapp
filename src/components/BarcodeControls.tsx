@@ -28,7 +28,8 @@ export function BarcodeControls({ config, onChange, isValid, errorMessage }: Bar
   const resetDimensions = () => {
     onChange({
       ...config,
-      width: defaults.width,
+      widthMils: defaults.widthMils,
+      dpi: defaults.dpi,
       height: defaults.height,
       margin: defaults.margin,
       fontSize: defaults.fontSize,
@@ -204,17 +205,59 @@ export function BarcodeControls({ config, onChange, isValid, errorMessage }: Bar
         <div className="space-y-5 pl-1">
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <Label className="text-muted-foreground">Bar Width</Label>
-              <span className="font-mono text-primary font-medium">{config.width}px</span>
+              <Label className="text-muted-foreground">Bar Width (X-dim)</Label>
+              <span className="font-mono text-primary font-medium">{config.widthMils} mil</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              {[5, 7.5].map((mil) => (
+                <button
+                  key={mil}
+                  type="button"
+                  onClick={() => onChange({ ...config, widthMils: mil })}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    config.widthMils === mil
+                      ? 'bg-primary text-primary-foreground shadow-lg'
+                      : 'bg-secondary/80 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`}
+                >
+                  {mil} mil
+                </button>
+              ))}
             </div>
             <Slider
-              value={[config.width]}
-              onValueChange={([value]) => onChange({ ...config, width: value })}
-              min={1}
-              max={5}
+              value={[config.widthMils]}
+              onValueChange={([value]) => onChange({ ...config, widthMils: value })}
+              min={4}
+              max={40}
               step={0.5}
               className="w-full"
             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <Label className="text-muted-foreground">Print DPI</Label>
+              <span className="font-mono text-primary font-medium">
+                → {(config.widthMils * config.dpi / 1000).toFixed(2)} px/bar
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {([96, 300, 600] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => onChange({ ...config, dpi: d })}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    config.dpi === d
+                      ? 'bg-primary text-primary-foreground shadow-lg'
+                      : 'bg-secondary/80 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">96 = screen • 300 = laser • 600 = hi-res</p>
           </div>
 
           <div className="space-y-3">

@@ -60,7 +60,8 @@ export const QUALITY_LEVELS: { value: QualityLevel; label: string; description: 
 export interface BarcodeConfig {
   format: BarcodeFormat;
   text: string;
-  width: number;
+  widthMils: number;
+  dpi: number;
   height: number;
   displayValue: boolean;
   fontSize: number;
@@ -69,7 +70,7 @@ export interface BarcodeConfig {
   margin: number;
   checksumType: ChecksumType;
   quality: QualityLevel;
-   scale: number;
+  scale: number;
 }
 
 export function getApplicableChecksums(format: BarcodeFormat): { value: ChecksumType; label: string }[] {
@@ -699,7 +700,8 @@ export function getDefaultConfig(): BarcodeConfig {
   return {
     format: 'CODE39',
     text: 'BARCODE123',
-    width: 2,
+    widthMils: 7.5,
+    dpi: 300,
     height: 100,
     displayValue: true,
     fontSize: 16,
