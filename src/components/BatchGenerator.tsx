@@ -275,9 +275,9 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
             <Input
               type="number"
               value={stringLength}
-              onChange={(e) => setStringLength(Math.max(1, Math.min(20, parseInt(e.target.value) || 8)))}
+              onChange={(e) => setStringLength(Math.max(1, Math.min(100, parseInt(e.target.value) || 8)))}
               min={1}
-              max={20}
+              max={100}
               className="font-mono"
             />
           </div>
