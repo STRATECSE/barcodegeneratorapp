@@ -15,7 +15,8 @@
       "Bash(find node_modules/jsbarcode/src -name *.js)",
       "Bash(node_modules/.bin/vitest --version)",
       "Bash(node_modules/.bin/vitest run:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(xargs wc:*)"
     ]
   }
 }
