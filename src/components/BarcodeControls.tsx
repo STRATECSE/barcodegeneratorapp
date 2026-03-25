@@ -1,4 +1,4 @@
-import { BarcodeConfig, BarcodeFormat, BARCODE_FORMATS, ChecksumType, getApplicableChecksums, getDefaultConfig, QualityLevel, snapToPixelGrid } from '@/lib/barcodeUtils';
+import { BarcodeConfig, BarcodeFormat, BARCODE_FORMATS, ChecksumType, getApplicableChecksums, getDefaultConfig, QualityLevel } from '@/lib/barcodeUtils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Barcode, Palette, Ruler, Hash, Maximize2, RotateCcw } from 'lucide-react';
+
 import { QualitySegmentedControl } from '@/components/QualitySegmentedControl';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
@@ -24,7 +25,6 @@ export function BarcodeControls({ config, onChange, isValid, errorMessage }: Bar
   const formats2D = BARCODE_FORMATS.filter(f => f.category === '2D');
 
   const defaults = getDefaultConfig();
-  const snap = snapToPixelGrid(config.widthMils, config.dpi);
 
   const resetDimensions = () => {
     onChange({
@@ -233,18 +233,13 @@ export function BarcodeControls({ config, onChange, isValid, errorMessage }: Bar
               step={0.5}
               className="w-full"
             />
-            {snap.modulePixels !== 0 && snap.actualMils !== config.widthMils && (
-              <p className="text-xs text-amber-500 font-mono">
-                Snapped to {snap.modulePixels} px = {Number(snap.actualMils.toFixed(1))} mil ({snap.actualMm.toFixed(3)} mm) @ {config.dpi} DPI
-              </p>
-            )}
           </div>
 
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <Label className="text-muted-foreground">Print DPI</Label>
               <span className="font-mono text-primary font-medium">
-                → {snap.modulePixels} px/bar
+                → {Math.max(1, Math.round(config.widthMils * config.dpi / 1000))} px/bar
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
