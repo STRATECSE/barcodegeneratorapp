@@ -27,7 +27,11 @@
       "Bash(git remote:*)",
       "Bash(ssh -T git@github-old)",
       "Bash(ls:*)",
-      "Bash(ssh -T git@github-new)"
+      "Bash(ssh -T git@github-new)",
+      "Read(//c/Users/ipop/AppData/Local/Temp/**)",
+      "Bash(ls -t /tmp/git-error-*)",
+      "Read(//c/Users/ipop/**)",
+      "Bash(git branch:*)"
     ]
   }
 }
