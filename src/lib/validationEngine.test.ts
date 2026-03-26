@@ -6,7 +6,7 @@ import {
 import { computeISOGrade, HEALTHCARE_X_DIM_MILS, normaliseForComparison } from './validationService';
 import {
   BARCODE_FORMATS, BarcodeFormat, getDefaultConfig,
-  calculateMod10, calculateMod11,
+  calculateMod10, calculateMod11, calculateGS1Mod10,
 } from './barcodeUtils';
 
 // ---------------------------------------------------------------------------
@@ -273,8 +273,9 @@ describe('ITF optional Mod 10', () => {
   it('body + correct Mod 10 check → valid', () => {
     // ITF requires even digit count for format validation, but the checksum engine
     // does not revalidate that constraint — it only checks the last character.
+    // ITF uses GS1 Mod 10 (weights 3,1), not Luhn
     const b6   = '123456';
-    const c    = String(calculateMod10(b6));
+    const c    = String(calculateGS1Mod10(b6));
     const full = b6 + c;
     const r = validator.validate(full, 'ITF', 'mod10');
     expect(r.checksumValidation.status).toBe('valid');

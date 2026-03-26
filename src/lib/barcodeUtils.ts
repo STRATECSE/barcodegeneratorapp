@@ -123,7 +123,10 @@ type ChecksumApplier = (text: string, format: BarcodeFormat) => string;
 
 const CHECKSUM_APPLIER_REGISTRY: Record<string, ChecksumApplier> = {
   mod10: (text, format) => {
-    const checkDigit = calculateMod10(text);
+    // ITF/ITF14 use GS1 weighted Mod 10; MSI uses Luhn
+    const checkDigit = (format === 'ITF' || format === 'ITF14')
+      ? calculateGS1Mod10(text)
+      : calculateMod10(text);
     let result = text + checkDigit;
     // ITF requires even number of digits — pad with leading zero if needed
     if ((format === 'ITF' || format === 'ITF14') && result.length % 2 !== 0) {
@@ -328,7 +331,7 @@ export function calculateMod10(input: string): number {
   const digits = input.replace(/\D/g, '').split('').map(Number);
   let sum = 0;
   let isOdd = true;
-  
+
   for (let i = digits.length - 1; i >= 0; i--) {
     let digit = digits[i];
     if (isOdd) {
@@ -338,7 +341,18 @@ export function calculateMod10(input: string): number {
     sum += digit;
     isOdd = !isOdd;
   }
-  
+
+  return (10 - (sum % 10)) % 10;
+}
+
+// GS1 Mod 10 (weights 3,1 from right) — used by ITF, ITF-14, EAN, UPC
+export function calculateGS1Mod10(input: string): number {
+  const digits = input.replace(/\D/g, '').split('').map(Number);
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    const posFromRight = digits.length - 1 - i;
+    sum += digits[i] * (posFromRight % 2 === 0 ? 3 : 1);
+  }
   return (10 - (sum % 10)) % 10;
 }
 
@@ -449,7 +463,8 @@ export function calculateMod11PZNChecksum(input: string): string {
   }
   
   const check = sum % 11;
-  return check === 10 ? '0' : String(check);
+  if (check === 10) return '!'; // PZN spec: remainder 10 = invalid PZN, no valid check digit exists
+  return String(check);
 }
 
 // Modulo 11-A checksum
@@ -609,6 +624,7 @@ const VALIDATION_REGISTRY: Partial<Record<BarcodeFormat, FormatValidator>> = {
   ITF: (text) =>
     !/^\d+$/.test(text) || text.length % 2 !== 0 ? { valid: false, message: 'ITF requires an even number of digits' } : null,
   pharmacode: (text) => {
+    if (!/^\d+$/.test(text)) return { valid: false, message: 'Pharmacode requires a number between 3 and 131070' };
     const num = parseInt(text, 10);
     return isNaN(num) || num < 3 || num > 131070 ? { valid: false, message: 'Pharmacode requires a number between 3 and 131070' } : null;
   },
@@ -617,6 +633,9 @@ const VALIDATION_REGISTRY: Partial<Record<BarcodeFormat, FormatValidator>> = {
   MSI11:   (text) => digitsOnly('MSI formats')(text),
   MSI1010: (text) => digitsOnly('MSI formats')(text),
   MSI1110: (text) => digitsOnly('MSI formats')(text),
+  codabar: (text) =>
+    /^[A-Da-d]?[0-9\-\$\:\/\.\+]+[A-Da-d]?$/.test(text) ? null
+      : { valid: false, message: 'Codabar only supports digits (0-9), -, $, :, /, ., + and optional A-D start/stop characters' },
   // CODE93, qrcode, azteccode, datamatrix, pdf417, CODE128: no special validation
 };
 

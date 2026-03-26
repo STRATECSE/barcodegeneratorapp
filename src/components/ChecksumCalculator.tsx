@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { 
-  calculateMod10, 
-  calculateMod11, 
+import {
+  calculateMod10,
+  calculateMod11,
   calculateMod43Checksum,
   calculateMod16Checksum,
   calculateJapanNW7Checksum,
@@ -14,7 +14,8 @@ import {
   calculate7CheckDRChecksum,
   calculateMod16JapanChecksum,
   calculateEAN13Checksum,
-  calculateUPCChecksum 
+  calculateUPCChecksum,
+  calculateGS1Mod10,
 } from '@/lib/barcodeUtils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,6 +49,12 @@ export function ChecksumCalculator({ onChecksumData }: ChecksumCalculatorProps) 
         name: 'Luhn (Mod 10)',
         value: isNumeric ? calculateLuhnChecksum(input) : '-',
         fullValue: isNumeric ? input + calculateLuhnChecksum(input) : '-',
+        applicable: isNumeric,
+      },
+      {
+        name: 'ITF Mod 10 (GS1)',
+        value: isNumeric ? String(calculateGS1Mod10(input)) : '-',
+        fullValue: isNumeric ? input + calculateGS1Mod10(input) : '-',
         applicable: isNumeric,
       },
       {
@@ -118,15 +125,15 @@ export function ChecksumCalculator({ onChecksumData }: ChecksumCalculatorProps) 
       },
       {
         name: 'EAN-13',
-        value: input.length >= 12 && isNumeric ? String(calculateEAN13Checksum(input)) : '-',
-        fullValue: input.length >= 12 && isNumeric ? input.slice(0, 12) + calculateEAN13Checksum(input) : '-',
-        applicable: input.length >= 12 && isNumeric,
+        value: input.length === 12 && isNumeric ? String(calculateEAN13Checksum(input)) : '-',
+        fullValue: input.length === 12 && isNumeric ? input + calculateEAN13Checksum(input) : '-',
+        applicable: input.length === 12 && isNumeric,
       },
       {
         name: 'UPC-A',
-        value: input.length >= 11 && isNumeric ? String(calculateUPCChecksum(input)) : '-',
-        fullValue: input.length >= 11 && isNumeric ? input.slice(0, 11) + calculateUPCChecksum(input) : '-',
-        applicable: input.length >= 11 && isNumeric,
+        value: input.length === 11 && isNumeric ? String(calculateUPCChecksum(input)) : '-',
+        fullValue: input.length === 11 && isNumeric ? input + calculateUPCChecksum(input) : '-',
+        applicable: input.length === 11 && isNumeric,
       },
     ];
 

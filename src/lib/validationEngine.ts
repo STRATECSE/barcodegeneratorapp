@@ -33,6 +33,7 @@ import {
   calculateMod16JapanChecksum,
   calculateEAN13Checksum,
   calculateUPCChecksum,
+  calculateGS1Mod10,
 } from './barcodeUtils';
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -181,11 +182,11 @@ const INTRINSIC_REGISTRY: Partial<Record<BarcodeFormat, IntrinsicFn>> = {
 
 interface OptionalEntry {
   name: string;
-  compute: (body: string) => string;
+  compute: (body: string, format?: BarcodeFormat) => string;
 }
 
 const OPTIONAL_REGISTRY: Partial<Record<ChecksumType, OptionalEntry>> = {
-  mod10:        { name: 'Mod 10 (Luhn)',     compute: (b) => String(calculateMod10(b)) },
+  mod10:        { name: 'Mod 10',            compute: (b, f) => String((f === 'ITF' || f === 'ITF14') ? calculateGS1Mod10(b) : calculateMod10(b)) },
   mod11:        { name: 'Mod 11',            compute: (b) => { const c = calculateMod11(b); return c === 10 ? 'X' : String(c); } },
   mod43:        { name: 'Mod 43 (Code 39)',  compute: calculateMod43Checksum },
   mod16:        { name: 'Mod 16 (Codabar)',  compute: calculateMod16Checksum },
@@ -235,7 +236,7 @@ export class BarcodeValidator {
 
     // ── Path 2: Optional checksum (CODE 39, Codabar, ITF, MSI …) ─────────────
     if (checksumType !== 'none') {
-      const cv = this.evaluateOptional(value, checksumType);
+      const cv = this.evaluateOptional(value, checksumType, format);
       if (cv.status === 'invalid') {
         throw new ValidationException(
           `Strict Match failed (${cv.algorithm}): ${cv.message}`,
@@ -288,7 +289,7 @@ export class BarcodeValidator {
    * Returns 'valid' if the last character is the correct check for the preceding body.
    * Returns 'invalid' if the last character is present but wrong — triggers Strict Match.
    */
-  private evaluateOptional(value: string, checksumType: ChecksumType): ChecksumValidationResult {
+  private evaluateOptional(value: string, checksumType: ChecksumType, format?: BarcodeFormat): ChecksumValidationResult {
     const entry = OPTIONAL_REGISTRY[checksumType];
     if (!entry) {
       return {
@@ -310,7 +311,7 @@ export class BarcodeValidator {
     }
     const body = value.slice(0, -1);
     const provided = value[value.length - 1];
-    const expected = entry.compute(body);
+    const expected = entry.compute(body, format);
 
     if (expected.toUpperCase() === provided.toUpperCase()) {
       return {

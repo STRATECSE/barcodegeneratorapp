@@ -21,6 +21,7 @@ import {
   is2DBarcode,
   getDefaultConfig,
   getApplicableChecksums,
+  calculateGS1Mod10,
 } from './barcodeUtils';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +45,30 @@ describe('calculateMod10', () => {
 
   it('ignores non-digit characters', () => {
     expect(calculateMod10('1-2-3-4-5')).toBe(calculateMod10('12345'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateGS1Mod10
+// ---------------------------------------------------------------------------
+describe('calculateGS1Mod10', () => {
+  it('returns 5 for "123456" (ITF standard test vector)', () => {
+    // Weights from right: 6×3=18, 5×1=5, 4×3=12, 3×1=3, 2×3=6, 1×1=1 → sum=45, check=5
+    expect(calculateGS1Mod10('123456')).toBe(5);
+  });
+
+  it('returns 7 for "12345"', () => {
+    // Weights from right: 5×3=15, 4×1=4, 3×3=9, 2×1=2, 1×3=3 → sum=33, check=7
+    expect(calculateGS1Mod10('12345')).toBe(7);
+  });
+
+  it('matches ITF-14 known check digit for "0361234567890"', () => {
+    // GS1 Mod 10: weights 3,1 from right → sum=106, check=(10-6)=4
+    expect(calculateGS1Mod10('0361234567890')).toBe(4);
+  });
+
+  it('ignores non-digit characters', () => {
+    expect(calculateGS1Mod10('1-2-3-4-5-6')).toBe(calculateGS1Mod10('123456'));
   });
 });
 
@@ -373,8 +398,19 @@ describe('normalizeForRendering', () => {
 // applyChecksum
 // ---------------------------------------------------------------------------
 describe('applyChecksum', () => {
-  it('mod10 on "12345" → appends check digit 5', () => {
-    expect(applyChecksum('12345', 'ITF', 'mod10')).toBe('123455');
+  it('mod10 on "12345" (ITF) → appends GS1 Mod 10 check digit 7', () => {
+    expect(applyChecksum('12345', 'ITF', 'mod10')).toBe('123457');
+  });
+
+  it('mod10 on "123456" (ITF) → appends GS1 Mod 10 check digit 5', () => {
+    // The user's original bug report: '123456' should give check digit 5, not 6 (Luhn)
+    expect(applyChecksum('123456', 'ITF', 'mod10')).toBe('01234565');
+    // 7 digits + pad = 8 digits (even), with leading zero
+  });
+
+  it('mod10 on MSI → uses Luhn algorithm, not GS1', () => {
+    // MSI Plessey Mod 10 is Luhn; '123456' Luhn check = 6
+    expect(applyChecksum('123456', 'MSI', 'mod10')).toBe('1234566');
   });
 
   it('mod43 on "HELLO" → appends check char "B"', () => {
@@ -512,6 +548,12 @@ describe('calculateMod11PZNChecksum', () => {
     // 1*1+2*2+3*3+4*4+5*5+6*6 = 1+4+9+16+25+36=91, 91%11=3
     expect(calculateMod11PZNChecksum('123456')).toBe('3');
   });
+
+  it('returns "!" when remainder is 10 (invalid PZN)', () => {
+    // Need input where sum%11=10. Try "19": 1*1+9*2=19, 19%11=8 (no)
+    // Try "29": 2*1+9*2=20, 20%11=9 (no). Try "39": 3*1+9*2=21, 21%11=10 ✓
+    expect(calculateMod11PZNChecksum('39')).toBe('!');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -618,6 +660,13 @@ describe('validateInput additional formats', () => {
   it('MSI10: accepts digits', () => expect(validateInput('12345', 'MSI10').valid).toBe(true));
   it('MSI1010: rejects alpha', () => expect(validateInput('ABC', 'MSI1010').valid).toBe(false));
   it('codabar: accepts valid chars', () => expect(validateInput('A12345B', 'codabar').valid).toBe(true));
+  it('codabar: accepts digits only', () => expect(validateInput('1234', 'codabar').valid).toBe(true));
+  it('codabar: accepts special chars "12-34$5.6:7/8+9"', () => expect(validateInput('12-34$5.6:7/8+9', 'codabar').valid).toBe(true));
+  it('codabar: accepts lowercase start/stop "a1234b"', () => expect(validateInput('a1234b', 'codabar').valid).toBe(true));
+  it('codabar: rejects invalid characters "@#!"', () => expect(validateInput('@#!', 'codabar').valid).toBe(false));
+  it('codabar: rejects letters other than A-D "HELLO"', () => expect(validateInput('HELLO', 'codabar').valid).toBe(false));
+  it('pharmacode: rejects non-purely-numeric "3abc"', () => expect(validateInput('3abc', 'pharmacode').valid).toBe(false));
+  it('pharmacode: rejects floating point "100.5"', () => expect(validateInput('100.5', 'pharmacode').valid).toBe(false));
 });
 
 // ---------------------------------------------------------------------------
