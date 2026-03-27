@@ -351,8 +351,8 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
         if (col === cols - 1) y += itemHmm + labelH + rowGap;
       });
 
-      const today = new Date().toISOString().split('T')[0];
-      pdf.save(`batch_barcodes_${today}.pdf`);
+      const timestamp = new Date().toISOString().replace('T', '_').replace(/:/g, '-').split('.')[0];
+      pdf.save(`batch_barcodes_${timestamp}.pdf`);
       toast.success(`PDF saved with ${pdfImages.length} barcodes`);
     } catch (error) {
       console.error('PDF export error:', error);
