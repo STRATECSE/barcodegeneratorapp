@@ -411,7 +411,9 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
         {/* Dimensions */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-muted-foreground" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Ruler className="h-4 w-4 text-primary" />
+            </div>
             <Label>Dimensions</Label>
           </div>
 
@@ -536,7 +538,9 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Package className="h-4 w-4 text-primary" />
+              </div>
               <Label className="font-semibold">Committed Batches</Label>
             </div>
             <Button variant="ghost" size="sm" onClick={clearAllBatches} className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive">
@@ -584,7 +588,9 @@ export function BatchGenerator({ onImagesGenerated, onActionsReady }: BatchGener
       {/* Output Size */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Maximize2 className="h-4 w-4 text-muted-foreground" />
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Maximize2 className="h-4 w-4 text-primary" />
+          </div>
           <Label>Output Size</Label>
         </div>
         <div className="flex gap-2">
