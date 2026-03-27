@@ -21,21 +21,19 @@ const Index = () => {
   const [checksumInput, setChecksumInput] = useState('');
   const [checksumVariants, setChecksumVariants] = useState<{ name: string; fullValue: string; applicable: boolean }[]>([]);
   const batchActionsRef = useRef<BatchActions | null>(null);
-  // Validate the post-checksum text, not the raw input.
-  // When a checksum is active it can fix issues (e.g. ITF odd→even digits)
-  // or introduce new ones (e.g. MSI + mod11 producing 'X').
+  // Validate the raw input with checksum context first, then confirm the
+  // post-checksum result is also valid (catches checksum-induced issues like
+  // MSI + mod11 producing an 'X' character).
   const barcodeText = applyChecksum(config.text, config.format, config.checksumType);
   const validation = (() => {
     if (!config.text.trim()) return { valid: false, message: 'Please enter a value' };
+    const rawResult = validateInput(config.text, config.format, config.checksumType);
+    if (!rawResult.valid) return rawResult;
     const postResult = validateInput(barcodeText, config.format);
-    if (postResult.valid) return postResult;
-    // Post-checksum value is invalid — decide which error to show
-    const rawResult = validateInput(config.text, config.format);
-    if (rawResult.valid) {
-      // Raw input is valid but the checksum made it invalid
+    if (!postResult.valid) {
       return { valid: false, message: 'Selected checksum produces an invalid character for this format' };
     }
-    return rawResult;
+    return postResult;
   })();
 
   const handleChecksumData = useCallback((input: string, checksums: { name: string; fullValue: string; applicable: boolean }[]) => {

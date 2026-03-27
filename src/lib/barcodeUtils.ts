@@ -609,7 +609,7 @@ export function normalizeForRendering(text: string, format: BarcodeFormat): stri
 // Each entry is a validator function that returns an error result or null (valid).
 
 type ValidationResult = { valid: boolean; message: string };
-type FormatValidator = (text: string) => ValidationResult | null;
+type FormatValidator = (text: string, checksumType?: ChecksumType) => ValidationResult | null;
 
 const digitsOnly = (label: string): FormatValidator => (text) =>
   /^\d+$/.test(text) ? null : { valid: false, message: `${label} only supports digits (0-9)` };
@@ -631,8 +631,18 @@ const VALIDATION_REGISTRY: Partial<Record<BarcodeFormat, FormatValidator>> = {
     digitsOnly('UPC-E')(text) ?? (text.length < 6 || text.length > 8 ? { valid: false, message: 'UPC-E requires 6, 7, or 8 digits' } : null),
   ITF14: (text) =>
     digitsOnly('ITF-14')(text) ?? (text.length !== 13 && text.length !== 14 ? { valid: false, message: 'ITF-14 requires exactly 13 or 14 digits' } : null),
-  ITF: (text) =>
-    !/^\d+$/.test(text) || text.length % 2 !== 0 ? { valid: false, message: 'ITF requires an even number of digits' } : null,
+  ITF: (text, checksumType = 'none') => {
+    if (!/^\d+$/.test(text)) return { valid: false, message: 'ITF requires an even number of digits (digits only)' };
+    if (checksumType === 'mod10') {
+      // With checksum, the check digit is appended to the input. The total must be
+      // even for ITF encoding, so the raw input must have an ODD number of digits.
+      // Even-length input would require a silent leading-zero pad which alters the data.
+      if (text.length % 2 === 0) return { valid: false, message: 'ITF with checksum requires an odd number of digits (the check digit will be appended to make it even)' };
+    } else {
+      if (text.length % 2 !== 0) return { valid: false, message: 'ITF requires an even number of digits' };
+    }
+    return null;
+  },
   pharmacode: (text) => {
     if (!/^\d+$/.test(text)) return { valid: false, message: 'Pharmacode requires a number between 3 and 131070' };
     const num = parseInt(text, 10);
@@ -649,13 +659,13 @@ const VALIDATION_REGISTRY: Partial<Record<BarcodeFormat, FormatValidator>> = {
   // CODE93, qrcode, azteccode, datamatrix, pdf417, CODE128: no special validation
 };
 
-export function validateInput(text: string, format: BarcodeFormat): ValidationResult {
+export function validateInput(text: string, format: BarcodeFormat, checksumType: ChecksumType = 'none'): ValidationResult {
   if (!text.trim()) {
     return { valid: false, message: 'Please enter a value' };
   }
   const validator = VALIDATION_REGISTRY[format];
   if (validator) {
-    const result = validator(text);
+    const result = validator(text, checksumType);
     if (result) return result;
   }
   return { valid: true, message: '' };

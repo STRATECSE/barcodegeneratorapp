@@ -285,6 +285,28 @@ describe('validateInput', () => {
     it('rejects non-numeric even-length input', () => {
       expect(validateInput('12AB', 'ITF').valid).toBe(false);
     });
+
+    describe('with mod10 checksum', () => {
+      it('accepts odd-length "123" (checksum will make it even)', () => {
+        expect(validateInput('123', 'ITF', 'mod10').valid).toBe(true);
+      });
+
+      it('accepts odd-length "12345"', () => {
+        expect(validateInput('12345', 'ITF', 'mod10').valid).toBe(true);
+      });
+
+      it('rejects even-length "1234" (checksum would require silent leading-zero pad)', () => {
+        expect(validateInput('1234', 'ITF', 'mod10').valid).toBe(false);
+      });
+
+      it('rejects even-length "123456"', () => {
+        expect(validateInput('123456', 'ITF', 'mod10').valid).toBe(false);
+      });
+
+      it('rejects non-numeric input', () => {
+        expect(validateInput('12AB', 'ITF', 'mod10').valid).toBe(false);
+      });
+    });
   });
 
   // ITF14
