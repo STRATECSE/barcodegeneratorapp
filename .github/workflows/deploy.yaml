@@ -3,12 +3,12 @@ name: Deploy UI Preview
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # This creates the button
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
+  pages: write      # Crucial: Gives permission to host the site
+  id-token: write   # Crucial: Required for the internal handshake
 
 jobs:
   deploy:
@@ -28,8 +28,11 @@ jobs:
       - name: Build Web Version
         run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: ./dist # Make sure this matches your build folder!
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
