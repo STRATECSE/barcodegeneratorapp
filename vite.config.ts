@@ -2,6 +2,8 @@ import { defineConfig } from "vite"; // Use vite instead of vitest
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+const basePath = process.env.VITE_BASE_PATH || "./";
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -9,9 +11,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src") 
     },
   },
-  // CRITICAL: This ensures all file paths in index.html are relative (./)
-  // so Electron can load them from the local folder.
-  base: './', 
+  // Default to relative paths for Electron; can be overridden for GitHub Pages.
+  base: basePath,
   build: {
     outDir: 'dist',
     emptyOutDir: true, // Cleans the folder before building
