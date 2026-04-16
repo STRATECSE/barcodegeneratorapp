@@ -1,43 +1,38 @@
 name: Deploy UI Preview
 
+# Trigger on push to main or manual run
 on:
-  push:
-    branches: [ main ]
+  #push:
+   # branches: [ main ]
   workflow_dispatch:
 
+# Give workflow write access to repo
 permissions:
-  contents: read
-  pages: write      # Required
-  id-token: write   # Required
+  contents: write
 
 jobs:
   deploy:
-    # This block is the missing link that triggers the UI update
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      # Checkout repo
+      - uses: actions/checkout@v3
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # Install Node
+      - uses: actions/setup-node@v3
         with:
-          node-version: 22 # Updated to Node 22 for 2026 compatibility
+          node-version: 18
 
-      - name: Install dependencies
-        run: npm install
+      # Install dependencies & build
+      - run: npm install
+      - run: npm run build
 
-      - name: Build Web Version
-        run: npm run build
+      # Optional: Check build folder
+      - run: ls ./dist
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # Deploy to GitHub Pages
+      - uses: peaceiris/actions-gh-pages@v3
         with:
-          path: ./dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist   # Change to ./build if your app outputs build folder
+          force_orphan: true   # optional, forces update even if git thinks nothing changed
